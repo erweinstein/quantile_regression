@@ -4,6 +4,8 @@ Eliot R. Weinstein
 eliotw@uchicago.edu  
 [erweinstein.com](https://erweinstein.com)
 
+Repository: https://github.com/erweinstein/quantile_regression
+
 Started as my final project for MSBI 31600 (Summer 2020): porting the MATLAB
 interior point algorithm for quantile regression, and Arellano and Bonhomme's
 selection-corrected quantile regression built on it, to Python. Cleaned up and
