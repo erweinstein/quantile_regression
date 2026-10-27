@@ -20,7 +20,9 @@ property of their authors and are subject to their own terms:
   Koenker, translated from Ox to MATLAB by Paul Eilers (1999), modified by
   Roger Koenker (2000–) and Paul Eilers (2004); rqic.m by Roger Koenker (2002).
   See http://www.econ.uiuc.edu/~roger/research/rq/rq.html and Portnoy, S. and
-  R. Koenker (1997), *Statistical Science* 12(4), 279–300. (Koenker's R package
+  R. Koenker (1997), *Statistical Science* 12(4), 279–300. The nonlinear
+  interior point algorithm and ipqr.m: Koenker, R. and B. J. Park (1996),
+  *Journal of Econometrics* 71, 265–283. (Koenker's R package
   quantreg, which implements the same algorithms, is licensed under the GNU
   GPL.)
 

@@ -15,7 +15,7 @@ completed in 2026.
 quantile regression of Roger Koenker's `quantreg` package: `lp_fnm` by Daniel
 Morillo and Roger Koenker, translated from Ox to MATLAB by Paul Eilers (1999),
 modified by Roger Koenker (2000–) and Paul Eilers (2004); `rqic.m` by Roger
-Koenker (2002). See Portnoy and Koenker (1997, *Statistical Science*) and
+Koenker (2002); `ipqr.m` implements Koenker and Park (1996). See Portnoy and Koenker (1997, *Statistical Science*) and
 <http://www.econ.uiuc.edu/~roger/research/rq/rq.html>. Selection-corrected
 quantile regression and `Code_QRS.m` are by Manuel Arellano and Stéphane
 Bonhomme (Arellano and Bonhomme, 2017, *Econometrica* 85(1), 1–28).
@@ -28,9 +28,10 @@ NOTICE.md           what the license covers, and attribution
 rq.py               bound(), lp_fnm(), rq()           <- rq.m (rq_fnm, lp_fnm, bound)
                     lp_fnm_ineq(), rqic()             <- rqic.m (inequality constraints R b >= r)
                     rq_objective()                    the check-function objective
+ipqr.py             ipqr(), qr_objective()            <- ipqr.m, ipqr_objfunc.m (nonlinear QR)
 selection_qr.py     probit(), bivariate_normal_cdf(), gaussian_copula_cdf(),
                     rotated_tau(), selection_qr()     <- Code_QRS.m
-tests/test_rq.py    15 tests (pytest)
+tests/test_rq.py    19 tests (pytest)
 ```
 
 ## Usage
@@ -123,10 +124,13 @@ These are the fixes needed to make it run and give the right answer:
       objective; `SSQR.txt` used the absolute value, which has the same
       minimizer).
 
-Not ported: `ipqr.m` (Koenker and Park's interior point method for nonlinear
-quantile regression), which relies on MATLAB functions removed long ago
-(`flops`, `fmin`). It would be a good next step:
-`scipy.optimize.minimize_scalar` replaces `fmin` for the line search.
+`ipqr.m` (Koenker and Park's interior point method for nonlinear quantile
+regression) is ported in `ipqr.py`. The MATLAB version passed the model as a
+function *name* and found its Jacobian by prepending `d` to it; in Python the
+two functions are passed directly. MATLAB's long-removed `flops` is dropped,
+and `fmin` (the line search) becomes `scipy.optimize.minimize_scalar` on the
+same interval. With a linear model, `ipqr()` reaches the same objective as
+`rq()`; the tests also check a nonlinear exponential model.
 
 ## Data note
 

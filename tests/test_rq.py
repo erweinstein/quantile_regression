@@ -99,3 +99,24 @@ def test_selection_qr_recovers_simulated_model():
     assert abs(r['rho'] - (-rho0)) < 0.15
     j = list(np.round(r['taus'], 2)).index(0.5)
     assert abs(r['beta'][0, j] - 1.0) < 0.15 and abs(r['beta'][1, j] - 1.0) < 0.15
+
+
+# ipqr (Koenker and Park's nonlinear interior point method) ------------------
+from ipqr import ipqr  # noqa: E402
+
+
+@pytest.mark.parametrize('tau', [0.25, 0.5, 0.75])
+def test_ipqr_linear_matches_rq(tau):
+    X, y = data()
+    r = ipqr(tau, y, X, lambda x, b: x @ b, lambda x, b: x, np.zeros(X.shape[1]))
+    assert abs(r['objective'] - rq_objective(X, y, rq(X, y, tau), tau)) < 1e-5
+
+
+def test_ipqr_nonlinear():
+    rng = np.random.default_rng(0)
+    x = rng.uniform(0, 2, 500)
+    y = 2 * np.exp(0.7 * x) + rng.normal(scale=0.5, size=500)
+    f = lambda x, b: b[0] * np.exp(b[1] * x)                       # noqa: E731
+    df = lambda x, b: np.column_stack([np.exp(b[1] * x), b[0] * x * np.exp(b[1] * x)])  # noqa: E731
+    r = ipqr(0.5, y, x, f, df, np.array([1.0, 0.3]))
+    assert np.allclose(r['beta'], [2.0, 0.7], atol=0.15)
