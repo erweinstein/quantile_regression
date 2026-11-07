@@ -229,8 +229,15 @@ intervals covered 46-49 of 50, except the slope at τ = 0.25 (37-38 of 50). That
 one has a bias of 0.043, more than its SD, which comes from the design rather
 than the bootstrap: the outcome's spread 0.5 + 0.3x is negative for about 5% of
 x, so the linear quantile model is slightly misspecified in the lower tail (and
-this may also be behind ρ̂'s bias). A design with a positive spread everywhere
-would separate the two.
+this may also be behind ρ̂'s bias).
+
+Rerun with x ~ Uniform(-1, 1), where the spread stays between 0.2 and 0.8 and the
+model is exactly right (`python checks/selection_bootstrap_coverage.py uniform`,
+50 data sets): the slope's bias disappeared (-0.004 at τ = 0.25) and the
+coefficient intervals covered 46-48 of 50; ρ̂ averaged -0.470 (bias about a third
+of an SD), its bootstrap SE (0.11) was somewhat larger than its Monte Carlo SD
+(0.09), and its intervals covered 48-49 of 50. So the shortfall in the first
+design came from the misspecification, not from the bootstrap.
 
 ## Data note
 
