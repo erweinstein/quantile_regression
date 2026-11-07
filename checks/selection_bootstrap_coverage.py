@@ -11,6 +11,11 @@ tau = 0.25, 0.5, 0.75, and the ratio of the mean bootstrap SE to the Monte Carlo
 Results are appended to checks/selection_bootstrap_coverage.csv as each data set
 finishes, so the run can be stopped and restarted.
 
+With the argument "uniform", X ~ Uniform(-1, 1) instead of N(0, 1), so the spread
+0.5 + 0.3 X stays between 0.2 and 0.8 and the linear quantile model is exactly right
+(with N(0, 1), the spread is negative for about 5% of X). Output then goes to
+checks/selection_bootstrap_coverage_uniform.csv.
+
 Eliot R. Weinstein
 eliotw@uchicago.edu
 erweinstein.com
@@ -22,9 +27,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from qr_extensions import selection_qr_bootstrap  # noqa: E402
 
 N, DATASETS, REPS = 1000, 50, 100
+UNIFORM = len(sys.argv) > 1 and sys.argv[1] == 'uniform'
 TAUS = np.round(np.arange(0.05, 0.95 + 1e-9, 0.05), 2)
 J = {0.25: 4, 0.5: 9, 0.75: 14}
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'selection_bootstrap_coverage.csv')
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                   'selection_bootstrap_coverage_uniform.csv' if UNIFORM else 'selection_bootstrap_coverage.csv')
 done = set()
 if os.path.exists(OUT):
     with open(OUT) as f:
@@ -33,7 +40,8 @@ for d in range(DATASETS):
     if d in done:
         continue
     rng = np.random.default_rng(1000 + d)
-    X = rng.normal(size=N); B = rng.normal(size=N)
+    X = rng.uniform(-1, 1, size=N) if UNIFORM else rng.normal(size=N)
+    B = rng.normal(size=N)
     u, v = rng.multivariate_normal([0, 0], [[1, 0.5], [0.5, 1]], size=N).T
     D = (0.3 + 0.5 * X + B + v > 0).astype(int)
     Y = 1 + X + (0.5 + 0.3 * X) * u

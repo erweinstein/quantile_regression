@@ -7,3 +7,4 @@ venv/
 .DS_Store
 checks/*log.txt
 __pycache__/
+checks/log_*.txt
