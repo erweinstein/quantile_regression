@@ -132,6 +132,94 @@ and `fmin` (the line search) becomes `scipy.optimize.minimize_scalar` on the
 same interval. With a linear model, `ipqr()` reaches the same objective as
 `rq()`; the tests also check a nonlinear exponential model.
 
+## Extensions (beyond the replication)
+
+The files above replicate `rq.m`, `rqic.m`, `ipqr.m` and `Code_QRS.m` and are
+left as they are. The files below add what the original code does not have:
+standard errors and bootstrap inference, a faster computation of the same
+estimates, the paper's own search settings, monotone quantile curves, and a
+smoothed estimator for large data. Each comes with a check in `checks/`; the
+numbers below are from those scripts. They ran on a 2-core cloud machine with
+other jobs running, so the absolute times are rough and the ratios are what matter.
+
+```
+qr_extensions.py      rq_se()                  standard errors for rq(): Powell's kernel sandwich
+                                               (as quantreg's summary.rq(se = "ker")) and an iid version
+                      weighted_rq(), weighted_probit(), selection_qr_weighted()
+                      selection_qr_bootstrap() weighted (multiplier) bootstrap for selection-corrected QR
+                      rearrange()              monotone quantile curves (Chernozhukov et al. 2010)
+selection_qr_fast.py  rq_fast()                rq() with the same iterations, vectorized
+                      rq_preprocessed()        Portnoy-Koenker preprocessing for observation-specific tau
+                      selection_qr_fast()      selection_qr(), faster; settings = "paper"; coarse search
+smoothed_qr.py        conquer(), conquer_bootstrap()   convolution-smoothed QR with multiplier bootstrap
+checks/               the simulations quoted below
+tests/                test_extensions.py, test_fast_and_smoothed.py (29 tests in all pass)
+```
+
+**Standard errors for `rq()`** (`checks/conquer_coverage.py`; n = 1,000, two
+covariates, t₄ errors whose scale grows with |x₁|, 300 data sets). Coverage of
+nominal 95% intervals for the three coefficients at the median: kernel sandwich
+96.7-97.3% (a little conservative), iid formula 86.0% for the slope whose
+spread depends on x₁ (93.7-94.3% for the others). At τ = 0.9 the kernel
+sandwich covered 87.7-93.0% and the iid formula 93.3-95.0%. Neither is right
+everywhere, which is the usual experience with these formulas; the bootstrap
+below did better.
+
+**Smoothed quantile regression** (`smoothed_qr.py`; He, Pan, Tan and Zhou 2023).
+It agrees with the R package `conquer` (version 1.3.3) to about 4 × 10⁻⁴ on the
+same data, the package's own convergence tolerance. In the same 300 data sets, its multiplier
+bootstrap (300 draws, Exp(1) weights) gave standard errors within 5% of the
+estimates' Monte Carlo SD and 95% intervals covering 92.0-95.3% (normal),
+91.7-94.7% (percentile) and 90.7-93.7% (pivotal); the estimates' Monte Carlo
+SDs were 1-5% smaller than `rq()`'s. It is a different estimator (it depends on
+the bandwidth h, by default the package's max{((log n + p)/n)^0.4, 0.05}), so it
+is offered beside `rq()`, not instead of it.
+
+**Faster selection-corrected QR** (`selection_qr_fast.py`, `checks/timing.py`,
+`checks/fast_vs_original.py`). Following Pereda-Fernández (2024): the
+interior point iterations vectorized; fits along the copula grid started from
+the neighbouring copula value, with Portnoy and Koenker's (1997) preprocessing
+adapted to observation-specific quantile levels; and an optional coarse-then-fine
+search over the copula grid. Median times, 3 data sets per size:
+
+| n | `selection_qr()` | fast, exact (default) | with preprocessing | preprocessing + coarse search |
+|---|---|---|---|---|
+| 2,000 | 4.7 s | 4.2 s (1.1×) | 3.1 s (1.5×) | 1.4 s (3.3×) |
+| 8,000 | 17.9 s | 14.3 s (1.2×) | 5.6 s (3.2×) | 2.9 s (6.2×) |
+| 32,000 | 81.8 s | 60.5 s (1.4×) | 13.7 s (6.9×) | 13.1 s (6.8×) |
+
+The default (no preprocessing, full grid) returns `selection_qr()`'s estimates
+to rounding error (the same ρ in all 22 data sets checked; the coefficients to
+about 10⁻¹⁵). With preprocessing every rotated regression reaches the same
+optimum, but ρ moved by one or two grid steps (0.02-0.04) in 16 of 30 data sets
+of 2,000 and 1 of 16 of 8,000 or more. The reason is that p observations lie
+exactly on each fitted line, and whether `1{Y ≤ X'b}` counts them depends on the
+last digits the solver leaves; `Code_QRS.m` does not settle it either (counting
+them as on or below the line, `tie_tol = 1e-7`, moved ρ by 0.02-0.04 in 9 of 12
+data sets of 2,000). These shifts are small next to ρ's sampling spread (a
+bootstrap SE of about 0.11 at n = 1,000), but they are not the same number, so preprocessing is an option,
+recommended for large samples and for bootstrapping. The speed-ups are smaller
+than the 45-125× Pereda-Fernández reports for his Algorithm 2, which also
+uses a reduced quantile grid for the slopes; ours keep `Code_QRS.m`'s grids.
+
+**The paper's settings** (`selection_qr_fast(..., settings = "paper")`): the
+copula search over the nine deciles and 200 grid points, as Arellano and
+Bonhomme describe for their application, instead of `Code_QRS.m`'s four
+quantiles (0.2-0.8) and 99 points. With preprocessing and the coarse search it
+took 4.5-15.7 s at n = 2,000-32,000, and ρ came out within 0.005 of the code
+settings' value in 7 of the 9 data sets timed (0.015 in the other two).
+
+**Rearrangement** (`rearrange()`, `checks/rearrangement.py`; 100 data sets each at
+n = 500 and 2,000). Where the linear quantile model is right (x = 0 and 2), the
+19 estimated quantiles crossed in 0-1% of data sets. At x = -2 the true quantile
+curve is decreasing in the model's form, so the estimated curves always cross;
+sorting them cut the root mean squared error from 0.115 to 0.076 (n = 500) and
+from 0.103 to 0.069 (n = 2,000). In line with Chernozhukov, Fernández-Val and
+Galichon's result, it was never worse in any data set.
+
+**Bootstrap for selection-corrected QR** (`selection_qr_bootstrap()`,
+`checks/selection_bootstrap_coverage.py`): BOOTSTRAP_RESULT
+
 ## Data note
 
 Arellano and Bonhomme's applications use, among others, the data of Huber and
@@ -147,6 +235,19 @@ JAE data archive: <http://qed.econ.queensu.ca/jae/2015-v30.7/huber-melly/>.
 - Koenker, R. (2005), *Quantile Regression*, Cambridge University Press.
 - Koenker, R. and B. J. Park (1996), "An Interior Point Algorithm for
   Nonlinear Quantile Regression," *Journal of Econometrics* 71, 265–283.
+- Chernozhukov, V., I. Fernández-Val and A. Galichon (2010), "Quantile and
+  Probability Curves Without Crossing," *Econometrica* 78(3), 1093–1125.
+- He, X., X. Pan, K. M. Tan and W.-X. Zhou (2023), "Smoothed Quantile
+  Regression with Large-Scale Inference," *Journal of Econometrics* 232(2),
+  367–388.
+- Ma, S. and M. R. Kosorok (2005), "Robust Semiparametric M-Estimation and the
+  Weighted Bootstrap," *Journal of Multivariate Analysis* 96(1), 190–217.
+- Pereda-Fernández, S. (2024), "Fast Algorithms for Quantile Regression with
+  Selection," arXiv:2402.16693.
+- Powell, J. L. (1991), "Estimation of Monotonic Regression Models under
+  Quantile Restrictions," in Barnett, Powell and Tauchen (eds.),
+  *Nonparametric and Semiparametric Methods in Econometrics and Statistics*,
+  Cambridge University Press, 357–384.
 - Portnoy, S. and R. Koenker (1997), "The Gaussian Hare and the Laplacian
   Tortoise: Computability of Squared-Error versus Absolute-Error Estimators,"
   *Statistical Science* 12(4), 279–300.

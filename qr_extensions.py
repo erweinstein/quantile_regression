@@ -56,6 +56,7 @@ from scipy.stats import norm
 
 from rq import rq
 from selection_qr import rotated_tau
+from selection_qr_fast import rq_fast   # the same iterations as rq(), vectorized
 
 
 # =============================================================================
@@ -117,7 +118,7 @@ def weighted_rq(X, y, tau, w):
     w = np.asarray(w, dtype=float)
     keep = w > 0
     tau = np.broadcast_to(np.asarray(tau, dtype=float), w.shape)[keep]
-    return rq(np.asarray(X, dtype=float)[keep] * w[keep, None], np.asarray(y, dtype=float)[keep] * w[keep],
+    return rq_fast(np.asarray(X, dtype=float)[keep] * w[keep, None], np.asarray(y, dtype=float)[keep] * w[keep],
               tau if tau.size > 1 else float(tau))
 
 
