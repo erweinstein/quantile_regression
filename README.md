@@ -219,16 +219,18 @@ Galichon's result, it was never worse in any data set.
 
 **Bootstrap for selection-corrected QR** (`selection_qr_bootstrap()`,
 `checks/selection_bootstrap_coverage.py`; n = 1,000, true ρ = -0.5, 100 draws
-with Exp(1) weights per data set; the run stopped at the workspace's 2-hour limit
-after 36 of the planned 50 data sets, so Monte Carlo error is about ±3.6 points).
-For ρ, the bootstrap SE averaged 0.111 against a Monte Carlo SD of 0.101, and
-95% intervals covered 34 (normal) and 35 (percentile) of 36. For the six
-coefficients at τ = 0.25, 0.5 and 0.75 the bootstrap SEs were within 0-25% of the
-Monte Carlo SDs (0.024-0.046 against 0.019-0.041) and the intervals covered 33-36
-of 36, except the slope at τ = 0.25 (29-30 of 36). That one has a bias of 0.038
-(more than its SD), from the design rather than the bootstrap: the outcome's
-spread 0.5 + 0.3x is negative for about 5% of x, so the linear quantile model is
-slightly misspecified in the lower tail.
+with Exp(1) weights per data set, 50 data sets, so Monte Carlo error is about
+±3 points). For ρ, the bootstrap SE averaged 0.113, equal to the Monte Carlo SD
+(0.113), and 95% intervals covered 45 (normal) and 46 (percentile) of 50; ρ̂
+averaged -0.443, a bias of about half an SD that the intervals do not correct.
+For the six coefficients at τ = 0.25, 0.5 and 0.75, the bootstrap SEs were
+within 0-20% of the Monte Carlo SDs (0.024-0.045 against 0.020-0.043) and the
+intervals covered 46-49 of 50, except the slope at τ = 0.25 (37-38 of 50). That
+one has a bias of 0.043, more than its SD, which comes from the design rather
+than the bootstrap: the outcome's spread 0.5 + 0.3x is negative for about 5% of
+x, so the linear quantile model is slightly misspecified in the lower tail (and
+this may also be behind ρ̂'s bias). A design with a positive spread everywhere
+would separate the two.
 
 ## Data note
 
